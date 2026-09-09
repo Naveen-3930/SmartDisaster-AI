@@ -1,5 +1,6 @@
 // public/js/chatbot.js
-// Rule-based FAQ assistant — no API calls, no cost, works offline from the server's perspective.
+// Calls the backend /api/chat endpoint (Ollama-powered), with a local
+// rule-based fallback if the request fails (e.g. Ollama isn't running).
 (function () {
     const RULES = [
         { keywords: ['flood'], reply: "During a flood: move to higher ground immediately, avoid walking or driving through flood water (even 6 inches can knock you over), and stay away from downed power lines. Check the app's Shelters section for the nearest safe location." },
@@ -18,12 +19,29 @@
 
     const FALLBACK = "I'm not sure about that one. Try asking about: flood/fire/heatwave/earthquake safety, reporting an incident, alerts, shelters, SOS, or missing persons.";
 
-    function getReply(message) {
+    function getLocalReply(message) {
         const text = message.toLowerCase();
         for (const rule of RULES) {
             if (rule.keywords.some((k) => text.includes(k))) return rule.reply;
         }
         return FALLBACK;
+    }
+
+    let chatHistory = [];
+
+    async function getReply(message) {
+        try {
+            const data = await API.request('/api/chat', {
+                method: 'POST',
+                body: { message, history: chatHistory },
+            });
+            chatHistory.push({ role: 'user', content: message });
+            chatHistory.push({ role: 'assistant', content: data.reply });
+            return data.reply;
+        } catch (err) {
+            console.warn('Chat API failed, using local fallback:', err.message);
+            return getLocalReply(message);
+        }
     }
 
     const wrapper = document.createElement('div');
@@ -60,12 +78,16 @@
         messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
-    function sendMessage() {
+    async function sendMessage() {
         const text = input.value.trim();
         if (!text) return;
         input.value = '';
         addMessage('user', text);
-        setTimeout(() => addMessage('assistant', getReply(text)), 250);
+        addMessage('assistant', '…thinking…');
+        const thinkingBubble = messagesEl.lastChild;
+        const reply = await getReply(text);
+        thinkingBubble.remove();
+        addMessage('assistant', reply);
     }
 
     toggleBtn.addEventListener('click', () => {

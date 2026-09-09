@@ -13,53 +13,48 @@ You help users with three things:
 Keep answers short, clear, and practical — this is a mobile-friendly chat widget, not a long-form article. Use plain language. If someone describes an active life-threatening emergency, tell them clearly to contact local emergency services immediately and use the app's SOS feature, before anything else.
 You do not have access to the user's live data (their specific incidents, location, or account) — you can only give general guidance and explain how features work.`;
 
+const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.2';
+
 router.post('/', verifyToken, async (req, res) => {
     const { message, history } = req.body;
 
     if (!message || !message.trim()) {
         return res.status(400).json({ error: 'message is required' });
     }
-    if (!process.env.ANTHROPIC_API_KEY) {
-        return res.status(500).json({ error: 'Chat is not configured on the server (missing API key)' });
-    }
 
-    const messages = Array.isArray(history)
-        ? history.slice(-10).map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }))
-        : [];
-    messages.push({ role: 'user', content: message.trim() });
+    const messages = [
+        { role: 'system', content: SYSTEM_PROMPT },
+        ...(Array.isArray(history)
+            ? history.slice(-10).map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }))
+            : []),
+        { role: 'user', content: message.trim() },
+    ];
 
     try {
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
+        const response = await fetch(`${OLLAMA_URL}/api/chat`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': process.env.ANTHROPIC_API_KEY,
-                'anthropic-version': '2023-06-01',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                model: 'claude-sonnet-4-6',
-                max_tokens: 500,
-                system: SYSTEM_PROMPT,
+                model: OLLAMA_MODEL,
                 messages,
+                stream: false,
             }),
         });
 
-        const data = await response.json();
-
         if (!response.ok) {
-            console.error('Anthropic API error:', data);
+            const errText = await response.text();
+            console.error('Ollama error:', errText);
             return res.status(502).json({ error: 'Chat service error' });
         }
 
-        const reply = (data.content || [])
-            .filter((block) => block.type === 'text')
-            .map((block) => block.text)
-            .join('\n');
+        const data = await response.json();
+        const reply = data?.message?.content || '';
 
         res.status(200).json({ reply });
     } catch (err) {
         console.error('Chat request failed:', err);
-        res.status(500).json({ error: 'Failed to reach chat service' });
+        return res.status(500).json({ error: 'Failed to reach chat service. Is Ollama running?' });
     }
 });
 

@@ -16,6 +16,39 @@ function validateInputs({ rainfall, water_level, temperature, humidity, smoke })
   return errors;
 }
 
+// Fetch live temperature & humidity for a location from OpenWeatherMap
+router.get('/weather', verifyToken, async (req, res) => {
+  const lat = +req.query.lat;
+  const lon = +req.query.lon;
+
+  if (Number.isNaN(lat) || Number.isNaN(lon)) {
+    return res.status(400).json({ error: 'lat and lon query params are required' });
+  }
+  if (!process.env.OPENWEATHER_API_KEY) {
+    return res.status(500).json({ error: 'Weather is not configured on the server (missing API key)' });
+  }
+
+  try {
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${process.env.OPENWEATHER_API_KEY}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('OpenWeatherMap error:', data);
+      return res.status(502).json({ error: data.message || 'Weather service error' });
+    }
+
+    res.json({
+      temperature: Math.round(data.main.temp),
+      humidity: Math.round(data.main.humidity),
+      location_name: data.name || null,
+    });
+  } catch (err) {
+    console.error('Weather request failed:', err);
+    res.status(500).json({ error: 'Failed to reach weather service' });
+  }
+});
+
 router.post('/', verifyToken, (req, res) => {
   const rainfall = +req.body.rainfall;
   const water_level = +req.body.water_level;
@@ -47,11 +80,14 @@ router.post('/', verifyToken, (req, res) => {
   );
 
   if (result.risk_level === 'HIGH' || result.risk_level === 'CRITICAL') {
+    const currentUser = db.prepare('SELECT location FROM users WHERE id = ?').get(req.user.id);
+    const alertLocation = currentUser?.location || 'Unknown';
+
     const message = `🚨 ${result.risk_level} ${result.primary_hazard} ALERT - ${result.recommended_action}`;
     db.prepare(`
       INSERT INTO alerts (type,severity,message,location,risk_score,status,created_at)
       VALUES (?,?,?,?,?,?,?)
-    `).run(result.primary_hazard, result.risk_level, message, 'User Area', result.overall_score, 'ACTIVE', now);
+    `).run(result.primary_hazard, result.risk_level, message, alertLocation, result.overall_score, 'ACTIVE', now);
   }
 
   res.json(result);

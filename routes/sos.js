@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../db');
-const { verifyToken, requireRole } = require('../middleware');
+const { verifyToken, requireAnyRole } = require('../middleware');
 
 const router = express.Router();
 
@@ -17,14 +17,14 @@ router.post('/', verifyToken, (req, res) => {
   res.status(201).json({ message: 'SOS request received', id: result.lastInsertRowid });
 });
 
-// Admin views all SOS requests
-router.get('/', verifyToken, requireRole('ADMIN'), (req, res) => {
+// Staff (admin or responder) views all SOS requests
+router.get('/', verifyToken, requireAnyRole(['ADMIN', 'RESPONDER']), (req, res) => {
   const rows = db.prepare('SELECT * FROM sos_requests ORDER BY id DESC').all();
   res.json(rows);
 });
 
-// Admin updates SOS status
-router.put('/:id', verifyToken, requireRole('ADMIN'), (req, res) => {
+// Staff (admin or responder) updates SOS status
+router.put('/:id', verifyToken, requireAnyRole(['ADMIN', 'RESPONDER']), (req, res) => {
   const { status } = req.body;
   const valid = ['PENDING', 'ACKNOWLEDGED', 'RESPONDING', 'RESOLVED'];
   if (!valid.includes(status)) {

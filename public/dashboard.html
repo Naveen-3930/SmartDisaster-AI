@@ -124,11 +124,21 @@
             </div>
           </div>
         </div>
+
+        <div id="breakdownSection" class="mt-5 pt-4 border-t border-slate-800 hidden">
+          <h4 class="text-xs uppercase tracking-wide text-slate-400 mb-2">Why this score?</h4>
+          <div id="breakdownList" class="space-y-1.5 text-xs text-slate-300"></div>
+        </div>
       </div>
 
       <!-- Simulator -->
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
-        <h3 class="text-xs uppercase tracking-wide text-slate-400 mb-3">Simulate Environmental Data</h3>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs uppercase tracking-wide text-slate-400">Simulate Environmental Data</h3>
+          <button id="fetchWeatherBtn"
+            class="text-xs bg-slate-800 hover:bg-slate-700 text-sky-400 px-2.5 py-1 rounded-md">🌦 Live Weather</button>
+        </div>
+        <div id="weatherStatus" class="text-xs text-slate-500 mb-2 hidden"></div>
         <div class="space-y-3 text-sm">
           <div>
             <div class="flex justify-between mb-1"><span>Rainfall (mm)</span><span class="mono text-slate-400"
@@ -308,6 +318,20 @@
         document.getElementById('heatTxt').textContent = r.heat_score + '%';
         document.getElementById('heatBar').style.width = r.heat_score + '%';
 
+        const breakdownSection = document.getElementById('breakdownSection');
+        const breakdownList = document.getElementById('breakdownList');
+        if (Array.isArray(r.score_breakdown) && r.score_breakdown.length) {
+          breakdownList.innerHTML = r.score_breakdown.map((b) => `
+            <div class="flex justify-between">
+              <span>${b.factor}</span>
+              <span class="mono text-slate-400">+${b.value}</span>
+            </div>
+          `).join('');
+          breakdownSection.classList.remove('hidden');
+        } else {
+          breakdownSection.classList.add('hidden');
+        }
+
         if (riskCircle) map.removeLayer(riskCircle);
         if (r.risk_level === 'HIGH' || r.risk_level === 'CRITICAL') {
           riskCircle = L.circle(userMarker.getLatLng(), { radius: 4000, color: riskColor(r.risk_level), fillOpacity: 0.15 }).addTo(map);
@@ -315,6 +339,25 @@
         }
       } catch (err) {
         alert('Error: ' + err.message);
+      }
+    });
+
+    document.getElementById('fetchWeatherBtn').addEventListener('click', async () => {
+      const statusEl = document.getElementById('weatherStatus');
+      statusEl.textContent = 'Fetching live weather…';
+      statusEl.classList.remove('hidden');
+      try {
+        const ll = userMarker.getLatLng();
+        const data = await API.request(`/api/prediction/weather?lat=${ll.lat}&lon=${ll.lng}`);
+
+        document.getElementById('temperature').value = data.temperature;
+        document.getElementById('tempVal').textContent = data.temperature;
+        document.getElementById('humidity').value = data.humidity;
+        document.getElementById('humVal').textContent = data.humidity;
+
+        statusEl.textContent = `Live: ${data.temperature}°C, ${data.humidity}% humidity` + (data.location_name ? ` — ${data.location_name}` : '');
+      } catch (err) {
+        statusEl.textContent = 'Could not fetch live weather: ' + err.message;
       }
     });
 

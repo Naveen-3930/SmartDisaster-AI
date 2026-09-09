@@ -11,6 +11,7 @@ const sosRoutes = require('./routes/sos');
 const adminRoutes = require('./routes/admin');
 const incidentRoutes = require('./routes/incidents');
 const missingPersonsRoutes = require('./routes/missingPersons');
+const chatRoutes = require('./routes/chat');
 
 const app = express();
 app.use(cors());
@@ -26,6 +27,7 @@ app.use('/api/sos', sosRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/incidents', incidentRoutes);
 app.use('/api/missing-persons', missingPersonsRoutes);
+app.use('/api/chat', chatRoutes);
 
 app.get('/', (req, res) => res.redirect('/login.html'));
 
