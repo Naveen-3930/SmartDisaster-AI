@@ -10,6 +10,7 @@ const contactRoutes = require('./routes/contacts');
 const sosRoutes = require('./routes/sos');
 const adminRoutes = require('./routes/admin');
 const incidentRoutes = require('./routes/incidents');
+const missingPersonsRoutes = require('./routes/missingPersons');
 
 const app = express();
 app.use(cors());
@@ -24,6 +25,9 @@ app.use('/api/contacts', contactRoutes);
 app.use('/api/sos', sosRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/incidents', incidentRoutes);
+app.use('/api/missing-persons', missingPersonsRoutes);
+
+app.get('/', (req, res) => res.redirect('/login.html'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 

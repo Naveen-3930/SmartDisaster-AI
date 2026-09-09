@@ -1,35 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>SmartDisaster AI — Dashboard</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<style>
-  body{font-family:'Inter',sans-serif;}
-  .brand,h1,h2{font-family:'Space Grotesk',sans-serif;}
-  .mono{font-family:'IBM Plex Mono',monospace;}
-  #map{height:220px;border-radius:10px;overflow:hidden;}
-  @media(min-width:768px){#map{height:300px;}}
-  .lvl-VERY_LOW,.lvl-LOW{background:#123425;color:#34D399;}
-  .lvl-MEDIUM{background:#3A2E10;color:#FBBF24;}
-  .lvl-HIGH{background:#3A2210;color:#FB7A3C;}
-  .lvl-CRITICAL{background:#7A2C1F;color:#FF5A3C;animation:pulse 1.4s infinite;}
-  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartDisaster AI — Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+
+    .brand,
+    h1,
+    h2 {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .mono {
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    #map {
+      height: 220px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    @media(min-width:768px) {
+      #map {
+        height: 300px;
+      }
+    }
+
+    .lvl-VERY_LOW,
+    .lvl-LOW {
+      background: #123425;
+      color: #34D399;
+    }
+
+    .lvl-MEDIUM {
+      background: #3A2E10;
+      color: #FBBF24;
+    }
+
+    .lvl-HIGH {
+      background: #3A2210;
+      color: #FB7A3C;
+    }
+
+    .lvl-CRITICAL {
+      background: #7A2C1F;
+      color: #FF5A3C;
+      animation: pulse 1.4s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: .55;
+      }
+    }
+  </style>
 </head>
+
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col md:flex-row">
 
   <!-- Sidebar -->
-  <div class="w-full md:w-56 bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 p-3 md:p-4 flex flex-row md:flex-col items-center md:items-stretch justify-between md:justify-start">
+  <div
+    class="w-full md:w-56 bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 p-3 md:p-4 flex flex-row md:flex-col items-center md:items-stretch justify-between md:justify-start">
     <div class="brand font-bold flex items-center gap-2 md:mb-6 px-1">
       <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span> SMARTDISASTER
     </div>
     <div class="hidden md:block text-sm text-slate-300 bg-slate-800 rounded-lg px-3 py-2 mb-1">Dashboard</div>
+    <a href="/missing.html" target="_blank"
+      class="hidden md:block text-sm text-slate-400 hover:text-orange-500 px-3 py-2 mb-1">Missing Persons</a>
     <div class="hidden md:block flex-1"></div>
-    <div id="logoutBtn" class="text-xs text-slate-500 hover:text-orange-500 cursor-pointer md:border-t md:border-slate-800 md:pt-3">Logout</div>
+    <div id="logoutBtn"
+      class="text-xs text-slate-500 hover:text-orange-500 cursor-pointer md:border-t md:border-slate-800 md:pt-3">Logout
+    </div>
   </div>
 
   <!-- Main -->
@@ -49,15 +107,21 @@
         <div class="mt-5 space-y-3 text-sm">
           <div>
             <div class="flex justify-between"><span>Flood</span><span class="mono" id="floodTxt">0%</span></div>
-            <div class="bg-slate-800 rounded h-2 mt-1 overflow-hidden"><div id="floodBar" class="h-full bg-sky-400" style="width:0%"></div></div>
+            <div class="bg-slate-800 rounded h-2 mt-1 overflow-hidden">
+              <div id="floodBar" class="h-full bg-sky-400" style="width:0%"></div>
+            </div>
           </div>
           <div>
             <div class="flex justify-between"><span>Fire</span><span class="mono" id="fireTxt">0%</span></div>
-            <div class="bg-slate-800 rounded h-2 mt-1 overflow-hidden"><div id="fireBar" class="h-full bg-orange-500" style="width:0%"></div></div>
+            <div class="bg-slate-800 rounded h-2 mt-1 overflow-hidden">
+              <div id="fireBar" class="h-full bg-orange-500" style="width:0%"></div>
+            </div>
           </div>
           <div>
             <div class="flex justify-between"><span>Heat</span><span class="mono" id="heatTxt">0%</span></div>
-            <div class="bg-slate-800 rounded h-2 mt-1 overflow-hidden"><div id="heatBar" class="h-full bg-yellow-400" style="width:0%"></div></div>
+            <div class="bg-slate-800 rounded h-2 mt-1 overflow-hidden">
+              <div id="heatBar" class="h-full bg-yellow-400" style="width:0%"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -67,27 +131,34 @@
         <h3 class="text-xs uppercase tracking-wide text-slate-400 mb-3">Simulate Environmental Data</h3>
         <div class="space-y-3 text-sm">
           <div>
-            <div class="flex justify-between mb-1"><span>Rainfall (mm)</span><span class="mono text-slate-400" id="rainfallVal">50</span></div>
+            <div class="flex justify-between mb-1"><span>Rainfall (mm)</span><span class="mono text-slate-400"
+                id="rainfallVal">50</span></div>
             <input type="range" id="rainfall" min="0" max="200" value="50" class="w-full accent-orange-500" />
           </div>
           <div>
-            <div class="flex justify-between mb-1"><span>Water Level (%)</span><span class="mono text-slate-400" id="waterVal">40</span></div>
+            <div class="flex justify-between mb-1"><span>Water Level (%)</span><span class="mono text-slate-400"
+                id="waterVal">40</span></div>
             <input type="range" id="water_level" min="0" max="100" value="40" class="w-full accent-orange-500" />
           </div>
           <div>
-            <div class="flex justify-between mb-1"><span>Temperature (°C)</span><span class="mono text-slate-400" id="tempVal">32</span></div>
+            <div class="flex justify-between mb-1"><span>Temperature (°C)</span><span class="mono text-slate-400"
+                id="tempVal">32</span></div>
             <input type="range" id="temperature" min="0" max="55" value="32" class="w-full accent-orange-500" />
           </div>
           <div>
-            <div class="flex justify-between mb-1"><span>Humidity (%)</span><span class="mono text-slate-400" id="humVal">45</span></div>
+            <div class="flex justify-between mb-1"><span>Humidity (%)</span><span class="mono text-slate-400"
+                id="humVal">45</span></div>
             <input type="range" id="humidity" min="0" max="100" value="45" class="w-full accent-orange-500" />
           </div>
           <div>
-            <div class="flex justify-between mb-1"><span>Smoke / Gas (%)</span><span class="mono text-slate-400" id="smokeVal">10</span></div>
+            <div class="flex justify-between mb-1"><span>Smoke / Gas (%)</span><span class="mono text-slate-400"
+                id="smokeVal">10</span></div>
             <input type="range" id="smoke" min="0" max="100" value="10" class="w-full accent-orange-500" />
           </div>
         </div>
-        <button id="runPrediction" class="w-full mt-4 bg-orange-500 hover:brightness-110 text-slate-950 font-semibold rounded-lg py-2.5">Run Prediction</button>
+        <button id="runPrediction"
+          class="w-full mt-4 bg-orange-500 hover:brightness-110 text-slate-950 font-semibold rounded-lg py-2.5">Run
+          Prediction</button>
       </div>
     </div>
 
@@ -99,7 +170,9 @@
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
         <h3 class="text-xs uppercase tracking-wide text-slate-400 mb-3">Emergency SOS</h3>
         <p class="text-slate-400 text-xs mb-3">Press only in a genuine emergency.</p>
-        <button id="sosBtn" class="w-full py-5 rounded-xl bg-orange-500 hover:brightness-110 text-slate-950 font-bold uppercase tracking-wide">SOS — Send Emergency Alert</button>
+        <button id="sosBtn"
+          class="w-full py-5 rounded-xl bg-orange-500 hover:brightness-110 text-slate-950 font-bold uppercase tracking-wide">SOS
+          — Send Emergency Alert</button>
         <h3 class="text-xs uppercase tracking-wide text-slate-400 mt-5 mb-2">Recent Alerts</h3>
         <div id="alertsList" class="text-sm text-slate-400">No alerts yet.</div>
       </div>
@@ -122,7 +195,8 @@
         <div class="space-y-3 text-sm">
           <div>
             <label class="text-slate-400 text-xs">Disaster Type</label>
-            <select id="incidentType" class="w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm">
+            <select id="incidentType"
+              class="w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm">
               <option value="FLOOD">Flood</option>
               <option value="FIRE">Fire</option>
               <option value="HEATWAVE">Heatwave</option>
@@ -133,11 +207,13 @@
           </div>
           <div>
             <label class="text-slate-400 text-xs">Location</label>
-            <input id="incidentLocation" type="text" placeholder="e.g. Kukatpally, Hyderabad" class="w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm" />
+            <input id="incidentLocation" type="text" placeholder="e.g. Kukatpally, Hyderabad"
+              class="w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm" />
           </div>
           <div>
             <label class="text-slate-400 text-xs">Severity</label>
-            <select id="incidentSeverity" class="w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm">
+            <select id="incidentSeverity"
+              class="w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm">
               <option value="LOW">Low</option>
               <option value="MEDIUM" selected>Medium</option>
               <option value="HIGH">High</option>
@@ -146,10 +222,13 @@
           </div>
           <div>
             <label class="text-slate-400 text-xs">Description</label>
-            <textarea id="incidentDescription" rows="3" placeholder="What's happening?" class="w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm"></textarea>
+            <textarea id="incidentDescription" rows="3" placeholder="What's happening?"
+              class="w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm"></textarea>
           </div>
         </div>
-        <button id="submitIncidentBtn" class="w-full mt-4 bg-orange-500 hover:brightness-110 text-slate-950 font-semibold rounded-lg py-2.5">Submit Report</button>
+        <button id="submitIncidentBtn"
+          class="w-full mt-4 bg-orange-500 hover:brightness-110 text-slate-950 font-semibold rounded-lg py-2.5">Submit
+          Report</button>
       </div>
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
         <h3 class="text-xs uppercase tracking-wide text-slate-400 mb-3">Recent Incident Reports</h3>
@@ -158,156 +237,158 @@
     </div>
   </div>
 
-<script src="/js/api.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-API.requireAuth();
-document.getElementById('userPill').textContent = 'Hi, ' + (API.user()?.name || 'User');
-document.getElementById('logoutBtn').addEventListener('click', () => API.logout());
+  <script src="/js/api.js"></script>
+  <script src="/js/chatbot.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    API.requireAuth();
+    document.getElementById('userPill').textContent = 'Hi, ' + (API.user()?.name || 'User');
+    document.getElementById('logoutBtn').addEventListener('click', () => API.logout());
 
-const map = L.map('map').setView([17.4239, 78.4738], 11);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
-const userMarker = L.circleMarker([17.4239, 78.4738], { radius: 9, color: '#4FA3FF', fillColor: '#4FA3FF', fillOpacity: 0.9 }).addTo(map).bindPopup('Your location');
-let riskCircle = null;
+    const map = L.map('map').setView([17.4239, 78.4738], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+    const userMarker = L.circleMarker([17.4239, 78.4738], { radius: 9, color: '#4FA3FF', fillColor: '#4FA3FF', fillOpacity: 0.9 }).addTo(map).bindPopup('Your location');
+    let riskCircle = null;
 
-['rainfall','water_level','temperature','humidity','smoke'].forEach((id) => {
-  const el = document.getElementById(id);
-  const label = document.getElementById({rainfall:'rainfallVal',water_level:'waterVal',temperature:'tempVal',humidity:'humVal',smoke:'smokeVal'}[id]);
-  el.addEventListener('input', () => label.textContent = el.value);
-});
+    ['rainfall', 'water_level', 'temperature', 'humidity', 'smoke'].forEach((id) => {
+      const el = document.getElementById(id);
+      const label = document.getElementById({ rainfall: 'rainfallVal', water_level: 'waterVal', temperature: 'tempVal', humidity: 'humVal', smoke: 'smokeVal' }[id]);
+      el.addEventListener('input', () => label.textContent = el.value);
+    });
 
-async function loadShelters() {
-  const shelters = await API.request('/api/shelters');
-  const el = document.getElementById('shelterList');
-  el.innerHTML = '';
-  shelters.forEach((s) => {
-    L.marker([s.latitude, s.longitude]).addTo(map).bindPopup(`<b>${s.name}</b><br>${s.address}<br>${s.occupied}/${s.capacity} — ${s.status}`);
-    el.innerHTML += `<div class="flex justify-between border-b border-slate-800 pb-2"><div><div>${s.name}</div><div class="text-slate-500 text-xs">${s.address}</div></div><span class="text-xs px-2 py-1 rounded bg-slate-800">${s.status}</span></div>`;
-  });
-}
-
-async function loadContacts() {
-  const contacts = await API.request('/api/contacts');
-  const el = document.getElementById('contactList');
-  el.innerHTML = '';
-  contacts.forEach((c) => {
-    el.innerHTML += `<div class="flex justify-between border-b border-slate-800 pb-2"><div><div>${c.name}</div><div class="text-slate-500 text-xs">${c.department}</div></div><span class="mono">${c.phone}</span></div>`;
-  });
-}
-
-async function loadAlerts() {
-  const alerts = await API.request('/api/alerts');
-  const el = document.getElementById('alertsList');
-  if (!alerts.length) { el.innerHTML = 'No alerts yet.'; return; }
-  el.innerHTML = '';
-  alerts.slice(0,6).forEach((a) => {
-    el.innerHTML += `<div class="border-b border-slate-800 py-2"><div>${a.message}</div><div class="text-slate-500 text-xs">${new Date(a.created_at).toLocaleString()}</div></div>`;
-  });
-}
-
-document.getElementById('runPrediction').addEventListener('click', async () => {
-  const body = {
-    rainfall: +document.getElementById('rainfall').value,
-    water_level: +document.getElementById('water_level').value,
-    temperature: +document.getElementById('temperature').value,
-    humidity: +document.getElementById('humidity').value,
-    smoke: +document.getElementById('smoke').value,
-  };
-  try {
-    const r = await API.request('/api/prediction', { method: 'POST', body });
-    document.getElementById('overallScore').textContent = r.overall_score;
-    document.getElementById('overallScore').style.color = riskColor(r.risk_level);
-    const lvlEl = document.getElementById('riskLevel');
-    lvlEl.textContent = r.risk_level.replace('_',' ') + ' — ' + r.primary_hazard;
-    lvlEl.className = 'inline-block mt-2 px-3 py-1 rounded-md text-xs font-bold lvl-' + r.risk_level;
-
-    document.getElementById('floodTxt').textContent = r.flood_score + '%';
-    document.getElementById('floodBar').style.width = r.flood_score + '%';
-    document.getElementById('fireTxt').textContent = r.fire_score + '%';
-    document.getElementById('fireBar').style.width = r.fire_score + '%';
-    document.getElementById('heatTxt').textContent = r.heat_score + '%';
-    document.getElementById('heatBar').style.width = r.heat_score + '%';
-
-    if (riskCircle) map.removeLayer(riskCircle);
-    if (r.risk_level === 'HIGH' || r.risk_level === 'CRITICAL') {
-      riskCircle = L.circle(userMarker.getLatLng(), { radius: 4000, color: riskColor(r.risk_level), fillOpacity: 0.15 }).addTo(map);
-      loadAlerts();
+    async function loadShelters() {
+      const shelters = await API.request('/api/shelters');
+      const el = document.getElementById('shelterList');
+      el.innerHTML = '';
+      shelters.forEach((s) => {
+        L.marker([s.latitude, s.longitude]).addTo(map).bindPopup(`<b>${s.name}</b><br>${s.address}<br>${s.occupied}/${s.capacity} — ${s.status}`);
+        el.innerHTML += `<div class="flex justify-between border-b border-slate-800 pb-2"><div><div>${s.name}</div><div class="text-slate-500 text-xs">${s.address}</div></div><span class="text-xs px-2 py-1 rounded bg-slate-800">${s.status}</span></div>`;
+      });
     }
-  } catch (err) {
-    alert('Error: ' + err.message);
-  }
-});
 
-document.getElementById('sosBtn').addEventListener('click', async () => {
-  if (!confirm('Confirm sending an emergency SOS request?')) return;
-  const ll = userMarker.getLatLng();
-  try {
-    await API.request('/api/sos', { method: 'POST', body: { latitude: ll.lat, longitude: ll.lng, emergency_type: 'General' } });
-    alert('SOS sent. Responders have been notified.');
-  } catch (err) {
-    alert('Error: ' + err.message);
-  }
-});
+    async function loadContacts() {
+      const contacts = await API.request('/api/contacts');
+      const el = document.getElementById('contactList');
+      el.innerHTML = '';
+      contacts.forEach((c) => {
+        el.innerHTML += `<div class="flex justify-between border-b border-slate-800 pb-2"><div><div>${c.name}</div><div class="text-slate-500 text-xs">${c.department}</div></div><span class="mono">${c.phone}</span></div>`;
+      });
+    }
 
-function incidentBadgeClass(status) {
-  return {
-    REPORTED: 'bg-slate-800 text-slate-300',
-    VERIFIED: 'bg-sky-900 text-sky-300',
-    ASSIGNED: 'bg-yellow-900 text-yellow-300',
-    RESPONSE_STARTED: 'bg-orange-900 text-orange-300',
-    RESOLVED: 'bg-emerald-900 text-emerald-300',
-    CLOSED: 'bg-slate-800 text-slate-500',
-  }[status] || 'bg-slate-800 text-slate-300';
-}
+    async function loadAlerts() {
+      const alerts = await API.request('/api/alerts');
+      const el = document.getElementById('alertsList');
+      if (!alerts.length) { el.innerHTML = 'No alerts yet.'; return; }
+      el.innerHTML = '';
+      alerts.slice(0, 6).forEach((a) => {
+        el.innerHTML += `<div class="border-b border-slate-800 py-2"><div>${a.message}</div><div class="text-slate-500 text-xs">${new Date(a.created_at).toLocaleString()}</div></div>`;
+      });
+    }
 
-async function loadIncidents() {
-  const el = document.getElementById('incidentsList');
-  try {
-    const { incidents } = await API.request('/api/incidents');
-    if (!incidents.length) { el.innerHTML = 'No incidents reported yet.'; return; }
-    el.innerHTML = '';
-    incidents.slice(0, 8).forEach((i) => {
-      el.innerHTML += `<div class="border-b border-slate-800 pb-2">
+    document.getElementById('runPrediction').addEventListener('click', async () => {
+      const body = {
+        rainfall: +document.getElementById('rainfall').value,
+        water_level: +document.getElementById('water_level').value,
+        temperature: +document.getElementById('temperature').value,
+        humidity: +document.getElementById('humidity').value,
+        smoke: +document.getElementById('smoke').value,
+      };
+      try {
+        const r = await API.request('/api/prediction', { method: 'POST', body });
+        document.getElementById('overallScore').textContent = r.overall_score;
+        document.getElementById('overallScore').style.color = riskColor(r.risk_level);
+        const lvlEl = document.getElementById('riskLevel');
+        lvlEl.textContent = r.risk_level.replace('_', ' ') + ' — ' + r.primary_hazard;
+        lvlEl.className = 'inline-block mt-2 px-3 py-1 rounded-md text-xs font-bold lvl-' + r.risk_level;
+
+        document.getElementById('floodTxt').textContent = r.flood_score + '%';
+        document.getElementById('floodBar').style.width = r.flood_score + '%';
+        document.getElementById('fireTxt').textContent = r.fire_score + '%';
+        document.getElementById('fireBar').style.width = r.fire_score + '%';
+        document.getElementById('heatTxt').textContent = r.heat_score + '%';
+        document.getElementById('heatBar').style.width = r.heat_score + '%';
+
+        if (riskCircle) map.removeLayer(riskCircle);
+        if (r.risk_level === 'HIGH' || r.risk_level === 'CRITICAL') {
+          riskCircle = L.circle(userMarker.getLatLng(), { radius: 4000, color: riskColor(r.risk_level), fillOpacity: 0.15 }).addTo(map);
+          loadAlerts();
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    });
+
+    document.getElementById('sosBtn').addEventListener('click', async () => {
+      if (!confirm('Confirm sending an emergency SOS request?')) return;
+      const ll = userMarker.getLatLng();
+      try {
+        await API.request('/api/sos', { method: 'POST', body: { latitude: ll.lat, longitude: ll.lng, emergency_type: 'General' } });
+        alert('SOS sent. Responders have been notified.');
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    });
+
+    function incidentBadgeClass(status) {
+      return {
+        REPORTED: 'bg-slate-800 text-slate-300',
+        VERIFIED: 'bg-sky-900 text-sky-300',
+        ASSIGNED: 'bg-yellow-900 text-yellow-300',
+        RESPONSE_STARTED: 'bg-orange-900 text-orange-300',
+        RESOLVED: 'bg-emerald-900 text-emerald-300',
+        CLOSED: 'bg-slate-800 text-slate-500',
+      }[status] || 'bg-slate-800 text-slate-300';
+    }
+
+    async function loadIncidents() {
+      const el = document.getElementById('incidentsList');
+      try {
+        const { incidents } = await API.request('/api/incidents');
+        if (!incidents.length) { el.innerHTML = 'No incidents reported yet.'; return; }
+        el.innerHTML = '';
+        incidents.slice(0, 8).forEach((i) => {
+          el.innerHTML += `<div class="border-b border-slate-800 pb-2">
         <div class="flex justify-between items-start">
           <div>
             <div class="font-medium">${i.disaster_type} — ${i.location}</div>
             <div class="text-slate-500 text-xs mt-0.5">${i.description || 'No description'}</div>
           </div>
-          <span class="text-xs px-2 py-1 rounded ${incidentBadgeClass(i.status)}">${i.status.replace('_',' ')}</span>
+          <span class="text-xs px-2 py-1 rounded ${incidentBadgeClass(i.status)}">${i.status.replace('_', ' ')}</span>
         </div>
         <div class="text-slate-600 text-xs mt-1">${new Date(i.created_at).toLocaleString()}</div>
       </div>`;
+        });
+      } catch (err) {
+        el.innerHTML = `<span class="text-orange-400">Failed to load incidents.</span>`;
+      }
+    }
+
+    document.getElementById('submitIncidentBtn').addEventListener('click', async () => {
+      const body = {
+        disaster_type: document.getElementById('incidentType').value,
+        location: document.getElementById('incidentLocation').value.trim(),
+        severity: document.getElementById('incidentSeverity').value,
+        description: document.getElementById('incidentDescription').value.trim(),
+      };
+      if (!body.location) {
+        alert('Please enter a location.');
+        return;
+      }
+      try {
+        await API.request('/api/incidents', { method: 'POST', body });
+        document.getElementById('incidentLocation').value = '';
+        document.getElementById('incidentDescription').value = '';
+        loadIncidents();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
     });
-  } catch (err) {
-    el.innerHTML = `<span class="text-orange-400">Failed to load incidents.</span>`;
-  }
-}
 
-document.getElementById('submitIncidentBtn').addEventListener('click', async () => {
-  const body = {
-    disaster_type: document.getElementById('incidentType').value,
-    location: document.getElementById('incidentLocation').value.trim(),
-    severity: document.getElementById('incidentSeverity').value,
-    description: document.getElementById('incidentDescription').value.trim(),
-  };
-  if (!body.location) {
-    alert('Please enter a location.');
-    return;
-  }
-  try {
-    await API.request('/api/incidents', { method: 'POST', body });
-    document.getElementById('incidentLocation').value = '';
-    document.getElementById('incidentDescription').value = '';
+    loadShelters();
+    loadContacts();
+    loadAlerts();
     loadIncidents();
-  } catch (err) {
-    alert('Error: ' + err.message);
-  }
-});
-
-loadShelters();
-loadContacts();
-loadAlerts();
-loadIncidents();
-</script>
+  </script>
 </body>
+
 </html>

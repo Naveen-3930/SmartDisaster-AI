@@ -75,6 +75,31 @@ CREATE TABLE IF NOT EXISTS incident_notes (
   note TEXT NOT NULL,
   created_at TEXT
 );
+
+CREATE TABLE IF NOT EXISTS missing_persons (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  report_type TEXT NOT NULL,          -- 'MISSING' or 'FOUND'
+  name TEXT,
+  approx_age INTEGER,
+  gender TEXT,
+  description TEXT,                   -- physical description, clothing, distinguishing marks
+  last_seen_location TEXT,
+  photo_path TEXT,
+  reporter_name TEXT NOT NULL,
+  reporter_contact TEXT NOT NULL,
+  reported_by INTEGER,                -- nullable: user id if logged in, null if anonymous
+  status TEXT DEFAULT 'OPEN',         -- OPEN, POTENTIAL_MATCH, REUNITED, CLOSED
+  created_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS missing_person_matches (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  missing_id INTEGER NOT NULL,
+  found_id INTEGER NOT NULL,
+  status TEXT DEFAULT 'PENDING',      -- PENDING, CONFIRMED, REJECTED
+  reviewed_by INTEGER,
+  created_at TEXT
+);
 `);
 
 // Seed only if empty
