@@ -9,15 +9,25 @@ const VALID_STATUSES = ['REPORTED', 'VERIFIED', 'ASSIGNED', 'RESPONSE_STARTED', 
 
 // User reports an incident
 router.post('/', verifyToken, (req, res) => {
-  const { disaster_type, location, severity, description } = req.body;
+  const { disaster_type, location, severity, description, latitude, longitude } = req.body;
   if (!disaster_type || !location) {
     return res.status(400).json({ error: 'disaster_type and location are required' });
   }
   const now = new Date().toISOString();
   const result = db.prepare(`
-    INSERT INTO incidents (disaster_type, location, severity, description, reported_by, status, created_at)
-    VALUES (?,?,?,?,?,?,?)
-  `).run(disaster_type, location, severity || 'MEDIUM', description || '', req.user.id, 'REPORTED', now);
+    INSERT INTO incidents (disaster_type, location, severity, description, reported_by, status, latitude, longitude, created_at)
+    VALUES (?,?,?,?,?,?,?,?,?)
+  `).run(
+    disaster_type,
+    location,
+    severity || 'MEDIUM',
+    description || '',
+    req.user.id,
+    'REPORTED',
+    latitude != null ? Number(latitude) : null,
+    longitude != null ? Number(longitude) : null,
+    now
+  );
 
   res.status(201).json({ message: 'Incident reported', id: result.lastInsertRowid });
 });
@@ -26,7 +36,7 @@ router.post('/', verifyToken, (req, res) => {
 router.get('/', verifyToken, (req, res) => {
   const { status, disaster_type, location } = req.query;
 
-  let query = 'SELECT * FROM incidents WHERE 1=1';
+  let query = 'SELECT *, latitude AS lat, longitude AS lng FROM incidents WHERE 1=1';
   const params = [];
 
   if (status) {
@@ -53,7 +63,7 @@ router.get('/', verifyToken, (req, res) => {
 
 // Get a single incident by id
 router.get('/:id', verifyToken, (req, res) => {
-  const incident = db.prepare('SELECT * FROM incidents WHERE id = ?').get(req.params.id);
+  const incident = db.prepare('SELECT *, latitude AS lat, longitude AS lng FROM incidents WHERE id = ?').get(req.params.id);
   if (!incident) {
     return res.status(404).json({ error: 'Incident not found' });
   }
@@ -61,7 +71,7 @@ router.get('/:id', verifyToken, (req, res) => {
 });
 
 // Update incident status (admin only) — e.g. VERIFIED, ASSIGNED, RESPONSE_STARTED, RESOLVED, CLOSED
-router.patch('/:id/status', verifyToken, requireAnyRole(['ADMIN','RESPONDER']), (req, res) => {
+router.patch('/:id/status', verifyToken, requireAnyRole(['ADMIN', 'RESPONDER']), (req, res) => {
   const { status } = req.body;
 
   if (!status || !VALID_STATUSES.includes(status)) {
@@ -79,7 +89,7 @@ router.patch('/:id/status', verifyToken, requireAnyRole(['ADMIN','RESPONDER']), 
 });
 
 // Assign an incident to a response team (admin only)
-router.patch('/:id/assign', verifyToken, requireAnyRole(['ADMIN','RESPONDER']), (req, res) => {
+router.patch('/:id/assign', verifyToken, requireAnyRole(['ADMIN', 'RESPONDER']), (req, res) => {
   const { assigned_team } = req.body;
 
   if (!assigned_team) {
@@ -98,7 +108,7 @@ router.patch('/:id/assign', verifyToken, requireAnyRole(['ADMIN','RESPONDER']), 
 });
 
 // Resolve/close an incident with a resolution note (admin only)
-router.patch('/:id/resolve', verifyToken, requireAnyRole(['ADMIN','RESPONDER']), (req, res) => {
+router.patch('/:id/resolve', verifyToken, requireAnyRole(['ADMIN', 'RESPONDER']), (req, res) => {
   const { resolution } = req.body;
 
   const incident = db.prepare('SELECT * FROM incidents WHERE id = ?').get(req.params.id);
@@ -113,7 +123,7 @@ router.patch('/:id/resolve', verifyToken, requireAnyRole(['ADMIN','RESPONDER']),
 });
 
 // Get notes/comments for an incident (staff only)
-router.get('/:id/notes', verifyToken, requireAnyRole(['ADMIN','RESPONDER']), (req, res) => {
+router.get('/:id/notes', verifyToken, requireAnyRole(['ADMIN', 'RESPONDER']), (req, res) => {
   const incident = db.prepare('SELECT id FROM incidents WHERE id = ?').get(req.params.id);
   if (!incident) {
     return res.status(404).json({ error: 'Incident not found' });
@@ -132,7 +142,7 @@ router.get('/:id/notes', verifyToken, requireAnyRole(['ADMIN','RESPONDER']), (re
 });
 
 // Add a note/comment to an incident (staff only)
-router.post('/:id/notes', verifyToken, requireAnyRole(['ADMIN','RESPONDER']), (req, res) => {
+router.post('/:id/notes', verifyToken, requireAnyRole(['ADMIN', 'RESPONDER']), (req, res) => {
   const { note } = req.body;
   if (!note || !note.trim()) {
     return res.status(400).json({ error: 'note is required' });

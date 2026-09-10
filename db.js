@@ -1,6 +1,7 @@
 // db.js
 const Database = require('better-sqlite3');
-const db = new Database('smartdisaster.db');
+const dbPath = process.env.DB_PATH || 'smartdisaster.db';
+const db = new Database(dbPath);
 const bcrypt = require('bcryptjs');
 
 db.exec(`
@@ -99,6 +100,25 @@ CREATE TABLE IF NOT EXISTS missing_person_matches (
   status TEXT DEFAULT 'PENDING',      -- PENDING, CONFIRMED, REJECTED
   reviewed_by INTEGER,
   created_at TEXT
+);
+`);
+
+// Migration: add lat/lng to incidents if not already present
+const incidentCols = db.prepare(`PRAGMA table_info(incidents)`).all().map(c => c.name);
+if (!incidentCols.includes('latitude')) {
+  db.exec(`ALTER TABLE incidents ADD COLUMN latitude REAL`);
+}
+if (!incidentCols.includes('longitude')) {
+  db.exec(`ALTER TABLE incidents ADD COLUMN longitude REAL`);
+}
+
+// Migration: table for tracking responders' live locations
+db.exec(`
+CREATE TABLE IF NOT EXISTS responder_locations (
+  user_id INTEGER PRIMARY KEY,
+  latitude REAL,
+  longitude REAL,
+  updated_at TEXT
 );
 `);
 

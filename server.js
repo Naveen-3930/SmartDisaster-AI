@@ -12,6 +12,7 @@ const adminRoutes = require('./routes/admin');
 const incidentRoutes = require('./routes/incidents');
 const missingPersonsRoutes = require('./routes/missingPersons');
 const chatRoutes = require('./routes/chat');
+const responderRoutes = require('./routes/responders');
 
 const app = express();
 app.use(cors());
@@ -28,10 +29,11 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/incidents', incidentRoutes);
 app.use('/api/missing-persons', missingPersonsRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/responders', responderRoutes);
 
 app.get('/', (req, res) => res.redirect('/login.html'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`SmartDisaster AI running on https://smartdisaster.onrender.com`));
+app.listen(PORT, () => console.log(`SmartDisaster AI running on port ${PORT}`));
