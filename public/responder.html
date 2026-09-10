@@ -9,6 +9,9 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600&display=swap"
         rel="stylesheet">
+    <!-- Leaflet (map) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -49,6 +52,88 @@
             background: #1C2028;
             color: #6B7280;
         }
+
+        .st-PENDING {
+            background: #3A1010;
+            color: #FB5C5C;
+        }
+
+        .st-ACKNOWLEDGED {
+            background: #3A2E10;
+            color: #FBBF24;
+        }
+
+        .st-EN_ROUTE {
+            background: #122E3A;
+            color: #4FA3FF;
+        }
+
+        .st-SAFE {
+            background: #123425;
+            color: #34D399;
+        }
+
+        #map {
+            height: 380px;
+            width: 100%;
+            border-radius: 0.75rem;
+            z-index: 0;
+        }
+
+        .sos-pulse {
+            box-shadow: 0 0 0 0 rgba(251, 92, 92, 0.7);
+            animation: sosPulse 1.6s infinite;
+        }
+
+        @keyframes sosPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(251, 92, 92, 0.55);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(251, 92, 92, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(251, 92, 92, 0);
+            }
+        }
+
+        .locateBtn {
+            line-height: 1;
+        }
+
+        .my-loc-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #38BDF8;
+            border: 2px solid #0EA5E9;
+            box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7);
+            animation: myLocPulse 2s infinite;
+        }
+
+        @keyframes myLocPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.55);
+            }
+
+            70% {
+                box-shadow: 0 0 0 12px rgba(56, 189, 248, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(56, 189, 248, 0);
+            }
+        }
+
+        .other-responder-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #A78BFA;
+            border: 2px solid #7C3AED;
+        }
     </style>
 </head>
 
@@ -63,57 +148,131 @@
         <a href="/missing.html" target="_blank"
             class="hidden md:block text-sm text-slate-400 hover:text-orange-500 px-3 py-2 mb-1">Missing Persons</a>
         <div class="hidden md:block flex-1"></div>
+        <div id="locationStatus" class="hidden md:block text-[11px] text-slate-500 px-3 py-2 mb-1">Location: off</div>
         <div id="logoutBtn"
             class="text-xs text-slate-500 hover:text-orange-500 cursor-pointer md:border-t md:border-slate-800 md:pt-3">
             Logout</div>
     </div>
 
-    <div class="flex-1 p-3 md:p-6 max-w-5xl w-full">
-        <div class="flex items-center justify-between mb-5">
+    <div class="flex-1 p-3 md:p-6 max-w-7xl w-full space-y-6">
+        <div class="flex items-center justify-between mb-1">
             <h1 class="text-xl font-bold">Incident Queue</h1>
             <span class="text-xs bg-slate-800 text-slate-400 px-3 py-1 rounded-full">Live — refreshes every 5s</span>
         </div>
 
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
-            <div class="flex flex-wrap gap-2 mb-3">
-                <select id="filterStatus" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs">
-                    <option value="">All statuses</option>
-                    <option value="REPORTED">Reported</option>
-                    <option value="VERIFIED">Verified</option>
-                    <option value="ASSIGNED">Assigned</option>
-                    <option value="RESPONSE_STARTED">Response started</option>
-                    <option value="RESOLVED">Resolved</option>
-                    <option value="CLOSED">Closed</option>
-                </select>
-                <select id="filterType" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs">
-                    <option value="">All types</option>
-                    <option value="FLOOD">Flood</option>
-                    <option value="FIRE">Fire</option>
-                    <option value="HEATWAVE">Heatwave</option>
-                    <option value="EARTHQUAKE">Earthquake</option>
-                    <option value="STORM">Storm</option>
-                    <option value="OTHER">Other</option>
-                </select>
-                <input id="filterLocation" type="text" placeholder="Search location…"
-                    class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs flex-1 min-w-[140px]" />
-                <button id="filterClearBtn"
-                    class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1.5 rounded-lg">Clear</button>
+        <!-- MAP -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <h2 class="text-sm font-semibold text-slate-300">Live Map</h2>
+                <div class="flex items-center gap-3 text-[11px] text-slate-400 flex-wrap">
+                    <span class="flex items-center gap-1"><span
+                            class="w-2.5 h-2.5 rounded-full bg-orange-500 inline-block"></span> Incident</span>
+                    <span class="flex items-center gap-1"><span
+                            class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span> SOS</span>
+                    <span class="flex items-center gap-1"><span
+                            class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span> Me</span>
+                    <span class="flex items-center gap-1"><span
+                            class="w-2.5 h-2.5 rounded-full bg-violet-400 inline-block"></span> Other responders</span>
+                    <button id="myLocationToggle"
+                        class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1 rounded-full">Share my
+                        location</button>
+                    <button id="recenterBtn"
+                        class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1 rounded-full">Recenter</button>
+                </div>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm min-w-[760px]">
-                    <thead>
-                        <tr class="text-slate-400 text-xs uppercase border-b border-slate-800">
-                            <th class="text-left pb-2">Type</th>
-                            <th class="text-left pb-2">Location</th>
-                            <th class="text-left pb-2">Severity</th>
-                            <th class="text-left pb-2">Reported</th>
-                            <th class="text-left pb-2">Status</th>
-                            <th class="text-left pb-2">Team</th>
-                            <th class="text-left pb-2">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="incidentsTable"></tbody>
-                </table>
+            <div id="map"></div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <!-- INCIDENTS -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 xl:col-span-2">
+                <div class="flex flex-wrap gap-2 mb-3">
+                    <select id="filterStatus"
+                        class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs">
+                        <option value="">All statuses</option>
+                        <option value="REPORTED">Reported</option>
+                        <option value="VERIFIED">Verified</option>
+                        <option value="ASSIGNED">Assigned</option>
+                        <option value="RESPONSE_STARTED">Response started</option>
+                        <option value="RESOLVED">Resolved</option>
+                        <option value="CLOSED">Closed</option>
+                    </select>
+                    <select id="filterType" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs">
+                        <option value="">All types</option>
+                        <option value="FLOOD">Flood</option>
+                        <option value="FIRE">Fire</option>
+                        <option value="HEATWAVE">Heatwave</option>
+                        <option value="EARTHQUAKE">Earthquake</option>
+                        <option value="STORM">Storm</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+                    <input id="filterLocation" type="text" placeholder="Search location…"
+                        class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs flex-1 min-w-[140px]" />
+                    <button id="filterClearBtn"
+                        class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1.5 rounded-lg">Clear</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm min-w-[780px]">
+                        <thead>
+                            <tr class="text-slate-400 text-xs uppercase border-b border-slate-800">
+                                <th class="text-left pb-2">Type</th>
+                                <th class="text-left pb-2">Location</th>
+                                <th class="text-left pb-2">Severity</th>
+                                <th class="text-left pb-2">Reported</th>
+                                <th class="text-left pb-2">Status</th>
+                                <th class="text-left pb-2">Team</th>
+                                <th class="text-left pb-2">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="incidentsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SOS TABLE -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-semibold text-slate-300">SOS Requests</h2>
+                    <span id="sosCount" class="text-xs bg-red-500/10 text-red-400 px-2 py-1 rounded-full">0
+                        pending</span>
+                </div>
+                <div class="overflow-x-auto max-h-80 overflow-y-auto">
+                    <table class="w-full text-sm min-w-[560px]">
+                        <thead>
+                            <tr class="text-slate-400 text-xs uppercase border-b border-slate-800">
+                                <th class="text-left pb-2">Requester</th>
+                                <th class="text-left pb-2">Location</th>
+                                <th class="text-left pb-2">Reported</th>
+                                <th class="text-left pb-2">Status</th>
+                                <th class="text-left pb-2">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sosTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ALERTS PANEL -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+                <h2 class="text-sm font-semibold text-slate-300 mb-3">Alerts</h2>
+                <form id="alertForm" class="flex flex-col gap-2 mb-3">
+                    <textarea id="alertMessage" rows="2" placeholder="Write an alert to broadcast…"
+                        class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs resize-none"></textarea>
+                    <div class="flex flex-wrap gap-2">
+                        <select id="alertSeverity"
+                            class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs">
+                            <option value="LOW">Low</option>
+                            <option value="MEDIUM" selected>Medium</option>
+                            <option value="HIGH">High</option>
+                            <option value="CRITICAL">Critical</option>
+                        </select>
+                        <input id="alertArea" type="text" placeholder="Area (e.g. Ward 4)"
+                            class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs flex-1 min-w-[120px]" />
+                        <button type="submit"
+                            class="bg-orange-500 hover:brightness-110 text-slate-950 font-semibold text-xs px-3 py-1.5 rounded-lg">Broadcast</button>
+                    </div>
+                </form>
+                <div id="alertsList" class="space-y-2 max-h-64 overflow-y-auto text-xs"></div>
             </div>
         </div>
     </div>
@@ -125,8 +284,170 @@
         document.getElementById('logoutBtn').addEventListener('click', () => API.logout());
 
         const INCIDENT_STATUSES = ['REPORTED', 'VERIFIED', 'ASSIGNED', 'RESPONSE_STARTED', 'RESOLVED', 'CLOSED'];
+        const SOS_STATUSES = ['PENDING', 'ACKNOWLEDGED', 'EN_ROUTE', 'SAFE'];
         const openNotesIds = new Set();
 
+        // ---------- MAP ----------
+        const map = L.map('map', { scrollWheelZoom: false }).setView([20.5937, 78.9629], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        const incidentMarkersLayer = L.layerGroup().addTo(map);
+        const sosMarkersLayer = L.layerGroup().addTo(map);
+        const responderMarkersLayer = L.layerGroup().addTo(map);
+
+        const incidentMarkersById = {};
+        const sosMarkersById = {};
+
+        let myLocationMarker = null;
+        let hasAutoFitted = false;
+
+        function fitMapToMarkers() {
+            const groups = [
+                ...incidentMarkersLayer.getLayers(),
+                ...sosMarkersLayer.getLayers(),
+                ...responderMarkersLayer.getLayers()
+            ];
+            if (myLocationMarker) groups.push(myLocationMarker);
+            if (!groups.length) return;
+            const bounds = L.featureGroup(groups).getBounds();
+            if (bounds.isValid()) map.fitBounds(bounds.pad(0.2));
+        }
+
+        document.getElementById('recenterBtn').addEventListener('click', fitMapToMarkers);
+
+        function renderIncidentMarkers(incidents) {
+            incidentMarkersLayer.clearLayers();
+            for (const key in incidentMarkersById) delete incidentMarkersById[key];
+            incidents.forEach((i) => {
+                if (i.lat == null || i.lng == null) return;
+                const marker = L.circleMarker([i.lat, i.lng], {
+                    radius: 8,
+                    color: '#FB923C',
+                    fillColor: '#FB923C',
+                    fillOpacity: 0.85,
+                    weight: 1
+                });
+                marker.bindPopup(`<b>${i.disaster_type}</b><br>${i.location}<br>Status: ${i.status.replace('_', ' ')}`);
+                marker.addTo(incidentMarkersLayer);
+                incidentMarkersById[i.id] = marker;
+            });
+        }
+
+        function renderSosMarkers(sosRequests) {
+            sosMarkersLayer.clearLayers();
+            for (const key in sosMarkersById) delete sosMarkersById[key];
+            sosRequests.forEach((s) => {
+                if (s.lat == null || s.lng == null) return;
+                const marker = L.circleMarker([s.lat, s.lng], {
+                    radius: 8,
+                    color: '#FB5C5C',
+                    fillColor: '#FB5C5C',
+                    fillOpacity: 0.9,
+                    weight: 1
+                });
+                marker.bindPopup(`<b>SOS — ${s.name || 'Unknown'}</b><br>${s.location}<br>Status: ${s.status.replace('_', ' ')}`);
+                marker.addTo(sosMarkersLayer);
+                sosMarkersById[s.id] = marker;
+            });
+        }
+
+        function jumpToMarker(marker) {
+            if (!marker) return;
+            map.setView(marker.getLatLng(), Math.max(map.getZoom(), 14), { animate: true });
+            marker.openPopup();
+        }
+
+        // ---------- MY LIVE LOCATION ----------
+        // Expected: PATCH /api/responders/me/location -> body { lat, lng }
+        let watchId = null;
+        let lastSentAt = 0;
+        const LOCATION_SEND_INTERVAL_MS = 15000;
+
+        function setMyLocationMarker(lat, lng) {
+            const icon = L.divIcon({ className: '', html: '<div class="my-loc-dot"></div>', iconSize: [16, 16] });
+            if (!myLocationMarker) {
+                myLocationMarker = L.marker([lat, lng], { icon, zIndexOffset: 1000 }).bindPopup('You are here').addTo(map);
+            } else {
+                myLocationMarker.setLatLng([lat, lng]);
+            }
+        }
+
+        async function sendMyLocation(lat, lng) {
+            try {
+                await API.request('/api/responders/me/location', { method: 'PATCH', body: { lat, lng } });
+            } catch (err) {
+                console.error('Failed to send location', err);
+            }
+        }
+
+        function handlePosition(pos) {
+            const { latitude, longitude } = pos.coords;
+            setMyLocationMarker(latitude, longitude);
+            document.getElementById('locationStatus').textContent = 'Location: sharing';
+            const now = Date.now();
+            if (now - lastSentAt > LOCATION_SEND_INTERVAL_MS) {
+                lastSentAt = now;
+                sendMyLocation(latitude, longitude);
+            }
+        }
+
+        function handlePositionError(err) {
+            console.error('Geolocation error', err);
+            document.getElementById('locationStatus').textContent = 'Location: unavailable';
+        }
+
+        function startSharingLocation() {
+            if (!navigator.geolocation) {
+                alert('Geolocation is not supported by this browser.');
+                return;
+            }
+            watchId = navigator.geolocation.watchPosition(handlePosition, handlePositionError, {
+                enableHighAccuracy: true,
+                maximumAge: 10000,
+                timeout: 15000
+            });
+            document.getElementById('myLocationToggle').textContent = 'Stop sharing location';
+            document.getElementById('locationStatus').textContent = 'Location: starting…';
+        }
+
+        function stopSharingLocation() {
+            if (watchId != null) navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+            document.getElementById('myLocationToggle').textContent = 'Share my location';
+            document.getElementById('locationStatus').textContent = 'Location: off';
+        }
+
+        document.getElementById('myLocationToggle').addEventListener('click', () => {
+            if (watchId == null) startSharingLocation();
+            else stopSharingLocation();
+        });
+
+        // ---------- OTHER RESPONDERS' LOCATIONS ----------
+        // Expected: GET /api/responders/locations -> { responders: [{ id, name, lat, lng, updated_at }] }
+        async function refreshResponderLocations() {
+            let responders = [];
+            try {
+                const res = await API.request('/api/responders/locations');
+                responders = res.responders || [];
+            } catch (err) {
+                console.error('Failed to load responder locations', err);
+                return;
+            }
+
+            responderMarkersLayer.clearLayers();
+            responders.forEach((r) => {
+                if (r.lat == null || r.lng == null) return;
+                const icon = L.divIcon({ className: '', html: '<div class="other-responder-dot"></div>', iconSize: [12, 12] });
+                const marker = L.marker([r.lat, r.lng], { icon });
+                marker.bindPopup(`<b>${r.name || 'Responder'}</b><br>Updated: ${r.updated_at ? new Date(r.updated_at).toLocaleTimeString() : '—'}`);
+                marker.addTo(responderMarkersLayer);
+            });
+        }
+
+        // ---------- INCIDENTS ----------
         function buildIncidentsQuery() {
             const params = new URLSearchParams();
             const status = document.getElementById('filterStatus').value;
@@ -157,12 +478,16 @@
 
         async function refreshIncidents() {
             const { incidents } = await API.request('/api/incidents' + buildIncidentsQuery());
+            renderIncidentMarkers(incidents);
+            if (!hasAutoFitted) { fitMapToMarkers(); }
+
             const tbody = document.getElementById('incidentsTable');
             tbody.innerHTML = incidents.length ? '' : '<tr><td colspan="7" class="py-4 text-slate-500 text-xs">No incidents match these filters.</td></tr>';
 
             incidents.forEach((i) => {
                 const tr = document.createElement('tr');
                 tr.className = 'border-b border-slate-800 align-top';
+                const hasCoords = i.lat != null && i.lng != null;
                 tr.innerHTML = `
       <td class="py-2">${i.disaster_type}</td>
       <td>${i.location}</td>
@@ -179,7 +504,10 @@
             <input type="text" data-id="${i.id}" placeholder="Assign team" class="incidentTeamInput flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs" />
             <button data-id="${i.id}" class="incidentAssignBtn bg-slate-800 hover:bg-slate-700 text-xs px-2 py-1 rounded">Go</button>
           </div>
-          <button data-id="${i.id}" class="incidentNotesToggleBtn bg-slate-800 hover:bg-slate-700 text-xs px-2 py-1 rounded">Notes</button>
+          <div class="flex gap-1">
+            <button data-id="${i.id}" class="incidentNotesToggleBtn bg-slate-800 hover:bg-slate-700 text-xs px-2 py-1 rounded flex-1">Notes</button>
+            ${hasCoords ? `<button data-id="${i.id}" class="incidentLocateBtn locateBtn bg-slate-800 hover:bg-slate-700 text-xs px-2 py-1 rounded" title="Show on map">📍</button>` : ''}
+          </div>
         </div>
       </td>`;
                 tbody.appendChild(tr);
@@ -248,8 +576,110 @@
                     } catch (err) { alert('Error: ' + err.message); }
                 });
             });
+
+            document.querySelectorAll('.incidentLocateBtn').forEach((btn) => {
+                btn.addEventListener('click', () => jumpToMarker(incidentMarkersById[btn.dataset.id]));
+            });
         }
 
+        // ---------- SOS ----------
+        // Expected shape: GET /api/sos -> { sos: [{ id, name, phone, location, lat, lng, status, created_at }] }
+        // PATCH /api/sos/:id/status -> body { status }
+        async function refreshSos() {
+            let sosRequests = [];
+            try {
+                const res = await API.request('/api/sos');
+                sosRequests = res.sos || [];
+            } catch (err) {
+                console.error('Failed to load SOS requests', err);
+            }
+
+            renderSosMarkers(sosRequests);
+            if (!hasAutoFitted) { fitMapToMarkers(); hasAutoFitted = true; }
+
+            const pending = sosRequests.filter(s => s.status === 'PENDING').length;
+            document.getElementById('sosCount').textContent = `${pending} pending`;
+
+            const tbody = document.getElementById('sosTable');
+            tbody.innerHTML = sosRequests.length ? '' : '<tr><td colspan="5" class="py-4 text-slate-500 text-xs">No SOS requests.</td></tr>';
+
+            sosRequests.forEach((s) => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-slate-800 align-top';
+                const hasCoords = s.lat != null && s.lng != null;
+                tr.innerHTML = `
+      <td class="py-2">${s.name || 'Unknown'}${s.phone ? `<div class="text-slate-500 text-[11px]">${s.phone}</div>` : ''}</td>
+      <td>${s.location}</td>
+      <td class="text-slate-500 text-xs">${new Date(s.created_at).toLocaleString()}</td>
+      <td><span class="text-xs px-2 py-1 rounded st-${s.status} ${s.status === 'PENDING' ? 'sos-pulse' : ''}">${s.status.replace('_', ' ')}</span></td>
+      <td>
+        <div class="flex items-center gap-1">
+          <select data-id="${s.id}" class="sosStatusSelect bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs">
+            ${SOS_STATUSES.map(st => `<option value="${st}" ${st === s.status ? 'selected' : ''}>${st.replace('_', ' ')}</option>`).join('')}
+          </select>
+          ${hasCoords ? `<button data-id="${s.id}" class="sosLocateBtn locateBtn bg-slate-800 hover:bg-slate-700 text-xs px-2 py-1 rounded" title="Show on map">📍</button>` : ''}
+        </div>
+      </td>`;
+                tbody.appendChild(tr);
+            });
+
+            document.querySelectorAll('.sosStatusSelect').forEach((sel) => {
+                sel.addEventListener('change', async () => {
+                    try {
+                        await API.request(`/api/sos/${sel.dataset.id}/status`, { method: 'PATCH', body: { status: sel.value } });
+                        refreshSos();
+                    } catch (err) { alert('Error: ' + err.message); }
+                });
+            });
+
+            document.querySelectorAll('.sosLocateBtn').forEach((btn) => {
+                btn.addEventListener('click', () => jumpToMarker(sosMarkersById[btn.dataset.id]));
+            });
+        }
+
+        // ---------- ALERTS ----------
+        // Expected shape: GET /api/alerts -> { alerts: [{ id, message, severity, area, created_at }] }
+        // POST /api/alerts -> body { message, severity, area }
+        async function refreshAlerts() {
+            let alerts = [];
+            try {
+                const res = await API.request('/api/alerts');
+                alerts = res.alerts || [];
+            } catch (err) {
+                console.error('Failed to load alerts', err);
+            }
+
+            const list = document.getElementById('alertsList');
+            list.innerHTML = alerts.length ? '' : '<span class="text-slate-600">No alerts issued yet.</span>';
+            alerts.forEach((a) => {
+                const div = document.createElement('div');
+                div.className = 'border-b border-slate-800 pb-1.5';
+                div.innerHTML = `
+      <div class="flex items-center gap-2 mb-0.5">
+        <span class="text-[10px] uppercase px-1.5 py-0.5 rounded st-${a.severity === 'CRITICAL' || a.severity === 'HIGH' ? 'ASSIGNED' : 'VERIFIED'}">${a.severity}</span>
+        ${a.area ? `<span class="text-slate-500">${a.area}</span>` : ''}
+      </div>
+      <div class="text-slate-300">${a.message}</div>
+      <div class="text-slate-600 mt-0.5">${new Date(a.created_at).toLocaleString()}</div>`;
+                list.appendChild(div);
+            });
+        }
+
+        document.getElementById('alertForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = document.getElementById('alertMessage').value.trim();
+            const severity = document.getElementById('alertSeverity').value;
+            const area = document.getElementById('alertArea').value.trim();
+            if (!message) return;
+            try {
+                await API.request('/api/alerts', { method: 'POST', body: { message, severity, area } });
+                document.getElementById('alertMessage').value = '';
+                document.getElementById('alertArea').value = '';
+                refreshAlerts();
+            } catch (err) { alert('Error: ' + err.message); }
+        });
+
+        // ---------- FILTERS ----------
         document.getElementById('filterStatus').addEventListener('change', refreshIncidents);
         document.getElementById('filterType').addEventListener('change', refreshIncidents);
         let filterDebounce;
@@ -264,8 +694,16 @@
             refreshIncidents();
         });
 
-        refreshIncidents();
-        setInterval(refreshIncidents, 5000);
+        // ---------- INIT ----------
+        function refreshAll() {
+            refreshIncidents();
+            refreshSos();
+            refreshAlerts();
+            refreshResponderLocations();
+        }
+
+        refreshAll();
+        setInterval(refreshAll, 5000);
     </script>
 </body>
 
